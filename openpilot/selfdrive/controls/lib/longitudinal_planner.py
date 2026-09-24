@@ -35,10 +35,24 @@ CONTROL_N_T_IDX = ModelConstants.T_IDXS[:CONTROL_N]
 ALLOW_THROTTLE_THRESHOLD = 0.5
 MIN_ALLOW_THROTTLE_SPEED = 2.5
 RESET_DECEL_RAMP_TIME = 2.0
+CRUISE_OVERSPEED_TOLERANCE_MAX_KPH = 15
 
 
 def get_max_accel(v_ego):
   return np.interp(v_ego, A_CRUISE_MAX_BP, A_CRUISE_MAX_VALS)
+
+def apply_cruise_overspeed_tolerance(min_accel, v_ego, v_cruise, tolerance_kph, target_lowered):
+  """Hold the cruise deceleration floor while the overspeed stays inside the band.
+
+  Only the cruise obstacle reads this floor, and its speed clip binds only while
+  v_cruise < v_ego, so lead following, traffic-stop braking and the solver's own
+  acceleration constraint keep their normal limits. A target lowered by a camera,
+  curve or road limit restores the standard floor immediately.
+  """
+  tolerance = min(CRUISE_OVERSPEED_TOLERANCE_MAX_KPH, max(0, int(tolerance_kph))) * CV.KPH_TO_MS
+  if tolerance <= 0.0 or target_lowered or v_ego <= v_cruise:
+    return min_accel
+  return float(np.interp(v_ego, [v_cruise + tolerance * 0.5, v_cruise + tolerance], [0.0, min_accel]))
 
 def get_coast_accel(pitch):
   return np.sin(pitch) * -5.65 - 0.3  # fitted from data using xx/projects/allow_throttle/compute_coast_accel.py
@@ -156,6 +170,11 @@ class LongitudinalPlanner:
         v_ego, curvature_future, accel_limits, a_lat_max,
         model_msg=sm['modelV2'], v_cruise=v_cruise,
         current_curvature=sm['controlsState'].curvature,
+      )
+      accel_limits_turns[0] = apply_cruise_overspeed_tolerance(
+        accel_limits_turns[0], v_ego, v_cruise,
+        self.params.get_int("CruiseOverspeedTolerance"),
+        self.v_cruise_kph < v_cruise_kph - 0.5,
       )
     else:
       accel_limits = [ACCEL_MIN, ACCEL_MAX]

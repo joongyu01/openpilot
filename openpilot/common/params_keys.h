@@ -215,6 +215,7 @@ inline static std::unordered_map<std::string, ParamKeyAttributes> keys = {
     {"AutoCruiseControl", {PERSISTENT, INT, "0"}},
     {"SoftHoldOnCancel", {PERSISTENT, BOOL, "0"}},
     {"CruiseEcoControl", {PERSISTENT, INT, "2"}},
+    {"CruiseOverspeedTolerance", {PERSISTENT, INT, "0"}},
     {"CarrotCruiseDecel", {PERSISTENT, INT, "-1"}},
     {"CarrotCruiseAtcDecel", {PERSISTENT, INT, "-1"}},
 

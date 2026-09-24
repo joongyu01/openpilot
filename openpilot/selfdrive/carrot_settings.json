@@ -340,7 +340,8 @@
                 "LongTuningKpV",
                 "LongTuningKiV",
                 "LongTuningKf",
-                "LongActuatorDelay"
+                "LongActuatorDelay",
+                "CruiseOverspeedTolerance"
               ]
             },
             {
@@ -1336,6 +1337,22 @@
       "max": 200,
       "default": 20,
       "unit": 5
+    },
+    {
+      "group": "주행튜닝",
+      "name": "CruiseOverspeedTolerance",
+      "title": "설정속도 초과 허용(0)km/h",
+      "descr": "앞차가 없고 과속카메라·커브·도로제한으로 목표속도가 낮아지지 않은 상태에서만, 설정속도를 이 값만큼 넘어도 감속을 요청하지 않습니다. 내리막에서 설정속도를 지키려고 제동해 뒤차 흐름을 막는 것을 줄입니다. 허용치의 절반을 넘으면 감속을 점차 되살리고 허용치를 넘으면 기존과 같이 감속합니다. 0은 기존 동작입니다.",
+      "egroup": "LONG",
+      "etitle": "Set speed overspeed allowance(0)km/h",
+      "edescr": "Skips cruise deceleration up to this much above the set speed, only with no lead and no target lowered by a speed camera, curve or road limit. Reduces braking that holds the set speed downhill and blocks following traffic. Deceleration fades back in past half the allowance and is normal beyond it. 0 keeps the current behavior.",
+      "cgroup": "纵向控制",
+      "ctitle": "设定车速超速允许(0)km/h",
+      "cdescr": "仅在无前车且未因测速摄像头、弯道或道路限速而降低目标速度时，超出设定速度该数值以内不请求减速。减少下坡为保持设定速度而制动、妨碍后车通行的情况。超过允许值一半后逐步恢复减速，超过允许值则与原来相同。0 为保持现有行为。",
+      "min": 0,
+      "max": 15,
+      "default": 0,
+      "unit": 1
     },
     {
       "group": "주행튜닝",
