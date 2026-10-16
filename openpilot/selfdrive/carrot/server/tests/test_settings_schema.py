@@ -485,6 +485,7 @@ def test_cluster_camera_preference_is_in_brightness_and_view(settings, params):
   assert brightness["params"] == [
     "ShowCustomBrightness",
     "ShowModelView",
+    "ShowWideCamera",
     "ShowCameraWithCluster",
   ]
 

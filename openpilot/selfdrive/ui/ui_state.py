@@ -92,6 +92,8 @@ class UIState:
     self.is_metric: bool = realtime_params.is_metric
     self.is_release = self.params.get_bool("IsReleaseBranch")
     self.always_on_dm: bool = realtime_params.always_on_dm
+    self.show_wide_camera: bool = realtime_params.show_wide_camera
+    self.dm_enabled: bool = realtime_params.dm_enabled
     self._record_audio_param: bool = realtime_params.record_audio
     self.started: bool = False
     self.ignition: bool = False
@@ -179,6 +181,8 @@ class UIState:
     self.recording_audio = self._record_audio_param and self.started
     self.is_metric = realtime_params.is_metric
     self.always_on_dm = realtime_params.always_on_dm
+    self.show_wide_camera = realtime_params.show_wide_camera
+    self.dm_enabled = realtime_params.dm_enabled
 
   def _update_status(self) -> None:
     if self.started and self.sm.updated["selfdriveState"]:

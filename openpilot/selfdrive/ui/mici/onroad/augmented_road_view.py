@@ -10,6 +10,7 @@ from openpilot.system.ui.lib import native_draw, native_geometry, native_text
 from openpilot.selfdrive.ui.mici.onroad import SIDE_PANEL_WIDTH
 from openpilot.selfdrive.ui.mici.onroad.alert_renderer import AlertRenderer
 from openpilot.selfdrive.ui.onroad.driver_preview import DriverPreview
+from openpilot.selfdrive.ui.dm_preview import preview_rect
 from openpilot.selfdrive.ui.mici.onroad.hud_renderer import HudRenderer
 from openpilot.selfdrive.ui.mici.onroad.model_renderer import ModelRenderer
 from openpilot.selfdrive.ui.mici.onroad.vision_renderer import VisionRenderer
@@ -39,6 +40,8 @@ class BookmarkState(IntEnum):
   DRAGGING = 1
   TRIGGERED = 2
 
+WIDE_CAM_MAX_SPEED = 5.0  # m/s (10 mph)
+ROAD_CAM_MIN_SPEED = 10  # m/s (25 mph)
 
 CAM_Y_OFFSET = 20
 
@@ -169,6 +172,7 @@ class AugmentedRoadView(CameraView):
     self._vision_renderer = VisionRenderer()
     self._alert_renderer = AlertRenderer()
     self._driver_state_renderer = DriverPreview(compact=True)
+    self._dm_inset_left: float | None = None
     self._confidence_ball = ConfidenceBall()
     self._traffic_light = TrafficLight()
     self._offroad_label = UnifiedLabel("start the car to\nuse openpilot", 54, FontWeight.DISPLAY,
@@ -231,13 +235,9 @@ class AugmentedRoadView(CameraView):
       self._switch_stream_if_needed(ui_state.sm)
       self._update_calibration()
 
-    # Create inner content area with border padding
-    self._content_rect = rl.Rectangle(
-      self.rect.x,
-      self.rect.y,
-      self.rect.width - SIDE_PANEL_WIDTH,
-      self.rect.height,
-    )
+    # joongyu01: video fills the screen (no black side strip); the confidence dot draws over it.
+    self._content_rect = rl.Rectangle(self.rect.x, self.rect.y, self.rect.width, self.rect.height)
+    hud_rect = rl.Rectangle(self.rect.x, self.rect.y, self.rect.width - SIDE_PANEL_WIDTH, self.rect.height)
 
     # Enable scissor mode to clip all rendering within content rectangle boundaries
     # This creates a rendering viewport that prevents graphics from drawing outside the border
@@ -268,7 +268,8 @@ class AugmentedRoadView(CameraView):
     if not self._suppress_camera_for_cluster:
       # Fade out bottom of overlays for looks
       _t = time.monotonic()
-      rl.draw_texture_ex(self._fade_texture, rl.Vector2(self._content_rect.x, self._content_rect.y), 0.0, 1.0, rl.WHITE)
+      fade = self._fade_texture
+      rl.draw_texture_pro(fade, rl.Rectangle(0, 0, fade.width, fade.height), self._content_rect, rl.Vector2(0, 0), 0.0, rl.WHITE)
       extras_ms += (time.monotonic() - _t) * 1000.0
 
     _t = time.monotonic()
@@ -280,12 +281,13 @@ class AugmentedRoadView(CameraView):
                                                alert_to_render.visual_alert == car.CarControl.HUDControl.VisualAlert.steerRequired)
     # TODO: have alert renderer draw offroad mici label below
     _t = time.monotonic()
-    self._hud_renderer.render(self._content_rect)
-    self._vision_renderer.render(self._content_rect)
+    self._hud_renderer.dm_inset_left = self._dm_inset_left
+    self._hud_renderer.render(hud_rect)
+    self._vision_renderer.render(hud_rect)
     hud_ms = (time.monotonic() - _t) * 1000.0
     if ui_state.started:
       _t = time.monotonic()
-      self._alert_renderer.render(self._content_rect)
+      self._alert_renderer.render(hud_rect)
       alert_ms += (time.monotonic() - _t) * 1000.0
 
     # Draw fake rounded border
@@ -299,7 +301,9 @@ class AugmentedRoadView(CameraView):
     # Custom UI extension point - add custom overlays here
     # Use self._content_rect for positioning within camera bounds
     _t = time.monotonic()
-    self._driver_state_renderer.draw_onroad(self.rect, alert_to_render is not None)
+    # joongyu01: no empty DM inset when monitoring is off; the gear moves left of the inset while it shows (next frame)
+    dm_shown = ui_state.dm_enabled and self._driver_state_renderer.draw_onroad(self.rect, alert_to_render is not None)
+    self._dm_inset_left = preview_rect(self.rect.x, self.rect.y, self.rect.width, self.rect.height, True)[0] if dm_shown else None
     ds_ms = (time.monotonic() - _t) * 1000.0
     _t = time.monotonic()
     self._traffic_light.render(self.rect)
@@ -311,7 +315,7 @@ class AugmentedRoadView(CameraView):
     # Draw darkened background and text if not onroad
     if not ui_state.started:
       rl.draw_rectangle(int(self.rect.x), int(self.rect.y), int(self.rect.width), int(self.rect.height), rl.Color(0, 0, 0, 175))
-      self._offroad_label.render(self._content_rect)
+      self._offroad_label.render(hud_rect)
 
     if gui_app.is_recording():
       x = int(self._content_rect.x + 16)
@@ -350,8 +354,20 @@ class AugmentedRoadView(CameraView):
     return max(0, min(ui_state.show_model_view, 3))
 
   def _switch_stream_if_needed(self, sm):
-    # joongyu01: C4 always shows the wide camera; overlays (lead box, path) follow via the wide calibration transform.
-    target = WIDE_CAM if WIDE_CAM in self.available_streams else ROAD_CAM
+    if ui_state.show_wide_camera and WIDE_CAM in self.available_streams:
+      # joongyu01 ShowWideCamera: overlays follow via the wide calibration transform
+      target = WIDE_CAM
+    elif sm['selfdriveState'].experimentalMode and WIDE_CAM in self.available_streams:
+      v_ego = sm['carState'].vEgo
+      if v_ego < WIDE_CAM_MAX_SPEED:
+        target = WIDE_CAM
+      elif v_ego > ROAD_CAM_MIN_SPEED:
+        target = ROAD_CAM
+      else:
+        # Hysteresis zone - keep current stream
+        target = self.stream_type
+    else:
+      target = ROAD_CAM
 
     if self.stream_type != target:
       self.switch_stream(target)

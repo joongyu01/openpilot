@@ -510,6 +510,7 @@
           "params": [
             "ShowCustomBrightness",
             "ShowModelView",
+            "ShowWideCamera",
             "ShowCameraWithCluster"
           ]
         },
@@ -3895,6 +3896,23 @@
       "default": 100,
       "unit": 5,
       "display_unit": "percent"
+    },
+    {
+      "group": "화면",
+      "name": "ShowWideCamera",
+      "title": "주행화면 광각 카메라(C4)",
+      "descr": "켜면 C4 주행화면에 속도와 관계없이 광각 전방 카메라 영상을 표시합니다. 끄면 기존처럼 일반 전방 카메라(실험 모드 저속에서만 광각)를 표시합니다.\n화면 표시만 바뀌며 모델 입력·제어는 같습니다. 앞차 표시와 경로는 표시 중인 카메라 좌표로 그려지고, 어안 렌즈라 화면 가장자리에서는 약간 어긋날 수 있습니다. C3/C3X는 영향 없음.",
+      "egroup": "DISPLAY",
+      "etitle": "Wide Camera on Driving Screen (C4)",
+      "edescr": "When on, the C4 driving screen shows the wide road camera at any speed. When off, it shows the narrow road camera as before (wide only at low speed in Experimental Mode).\nOnly the display changes; model inputs and control are unchanged. The lead marker and path are projected for the shown camera and may be slightly off near the edges because of the fisheye lens. No effect on C3/C3X.",
+      "cgroup": "显示",
+      "ctitle": "行车画面广角摄像头(C4)",
+      "cdescr": "开启后，C4 行车画面无论车速都显示广角前置摄像头画面。关闭时与以前相同，显示普通前置摄像头（仅在实验模式低速时显示广角）。\n只改变显示，模型输入和控制不变。前车标记和路径按当前显示的摄像头坐标绘制，由于鱼眼镜头，画面边缘可能略有偏差。对 C3/C3X 无影响。",
+      "min": 0,
+      "max": 1,
+      "default": 0,
+      "unit": 1,
+      "control": "toggle"
     },
     {
       "group": "화면",

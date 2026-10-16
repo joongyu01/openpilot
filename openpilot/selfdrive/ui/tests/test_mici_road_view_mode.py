@@ -22,11 +22,12 @@ def screen():
   cls.bases = [ast.Name(id="CameraBase", ctx=ast.Load())]
   cls.body = [node for node in cls.body if isinstance(node, ast.FunctionDef)
               and node.name in ("_road_view_mode", "_render", "set_cluster_hud_connected")]
-  state = SimpleNamespace(started=True, show_model_view=0, show_brightness_ratio=1.0, started_time=100.0, sm={})
+  state = SimpleNamespace(started=True, show_model_view=0, show_brightness_ratio=1.0, started_time=100.0, sm={}, dm_enabled=True)
   rl = Mock()
   rl.Rectangle.side_effect = lambda x, y, width, height: SimpleNamespace(x=x, y=y, width=width, height=height)
   namespace = {
     "CameraBase": CameraBase, "ui_state": state, "rl": rl, "SIDE_PANEL_WIDTH": 80,
+    "preview_rect": lambda x, y, width, height, compact: (x + width - 154, y + height - 96, 84, 84),
     "time": SimpleNamespace(monotonic=lambda: 100.0),
     "gui_app": SimpleNamespace(is_recording=lambda: False), "messaging": Mock(),
     "native_draw": SimpleNamespace(active=lambda: False),
@@ -41,7 +42,8 @@ def screen():
     setattr(view, name, Mock())
   view.stream_type = 0
   view.rect = SimpleNamespace(x=0, y=0, width=540, height=960)
-  view._fade_texture = object()
+  view._fade_texture = SimpleNamespace(width=476, height=240)
+  view._dm_inset_left = None
   view._plot_mode = 0
   view._alert_renderer.will_render.return_value = (None, False)
   view._render_diagnostics = Mock()

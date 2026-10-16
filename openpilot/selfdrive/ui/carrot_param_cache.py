@@ -81,6 +81,8 @@ class RealtimeUiParamSnapshot:
   record_audio: bool = False
   is_metric: bool = False
   always_on_dm: bool = False
+  show_wide_camera: bool = False
+  dm_enabled: bool = True
 
 
 def read_border_params(params, params_memory) -> BorderParamSnapshot:
@@ -111,6 +113,8 @@ def read_realtime_ui_params(params) -> RealtimeUiParamSnapshot:
     record_audio=params.get_bool("RecordAudio"),
     is_metric=params.get_bool("IsMetric"),
     always_on_dm=params.get_bool("AlwaysOnDM"),
+    show_wide_camera=params.get_bool("ShowWideCamera"),
+    dm_enabled=params.get_bool("DriverMonitoringEnabled") and not params.get_bool("DriverMonitoringSessionDisabled"),
   )
 
 

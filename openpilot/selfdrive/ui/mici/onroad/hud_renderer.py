@@ -182,6 +182,7 @@ class HudRenderer(Widget):
     self._cruise_speed_animation_started = 0.0
     """Initialize the HUD renderer."""
     self._debug_speed_panel = False
+    self.dm_inset_left: float | None = None  # set by AugmentedRoadView while the DM inset shows
     self.is_cruise_set: bool = False
     self.is_cruise_available: bool = True
     self.set_speed: float = SET_SPEED_NA
@@ -742,7 +743,6 @@ class HudRenderer(Widget):
 
     # ----- panel placement (bottom-left) -----
     bg = self._txt_speed_bg
-    panel_w = bg.width
     panel_h = bg.height
 
     margin_x = 10
@@ -750,8 +750,14 @@ class HudRenderer(Widget):
     panel_x = int(rect.x + margin_x)
     panel_y = int(rect.y + rect.height - panel_h - margin_y)
 
+    # joongyu01: gear at the right edge (left of the DM inset while it shows); the swoosh stretches up to it
+    gear_right = (rect.x + rect.width - 8) if self.dm_inset_left is None else (self.dm_inset_left - 6)
+    gear_w = 40
+    panel_w = max(bg.width, int(gear_right - gear_w - 6 - panel_x))
+
     # draw background
-    rl.draw_texture(bg, panel_x, panel_y, rl.WHITE)
+    rl.draw_texture_pro(bg, rl.Rectangle(0, 0, bg.width, bg.height), rl.Rectangle(panel_x, panel_y, panel_w, panel_h),
+                        rl.Vector2(0, 0), 0.0, rl.WHITE)
 
     # ----- current speed (big, left) -----
     if self._debug_speed_panel:
@@ -877,25 +883,9 @@ class HudRenderer(Widget):
 
     # ----- gear (right side box with letter) -----
     gear = self._get_gear_text()
-    box_w = 44
-    box_h = 54
-    box_x = int(panel_x + panel_w - box_w - 14 + 70)
-    box_y = int(panel_y + panel_h * 0.50)
-
-    # Fill (dark) + border (green)
-    rl.draw_rectangle_rounded(rl.Rectangle(box_x, box_y, box_w, box_h), 0.2, 8, rl.Color(0, 0, 0, 120))
-    rl.draw_rectangle_rounded_lines_ex(rl.Rectangle(box_x, box_y, box_w, box_h), 0.2, 8, 3, rl.Color(0, 255, 0, 230))
-
-    gear_font = 44
-    gear_size = measure_text_cached(self._font_display, gear, gear_font)
-    rl.draw_text_ex(
-      self._font_display,
-      gear,
-      rl.Vector2(box_x + (box_w - gear_size.x) * 0.5, box_y + (box_h - gear_size.y) * 0.5),
-      gear_font,
-      0,
-      rl.WHITE,
-    )
+    # White letter with the same black outline/shadow as the speed digits, no box
+    draw_text_ui_style(gear, int(gear_right), int(panel_y + panel_h * 0.73), 48, rl.WHITE, font=self._font_display,
+                       border_width=2.0, shadow_offset=3.0, align="right_center", y_offset=0.0)
 
     # 기존 레인모드/레인리스 출력 코드 제거
     """

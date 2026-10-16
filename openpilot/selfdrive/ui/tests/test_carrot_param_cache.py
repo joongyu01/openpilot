@@ -219,14 +219,18 @@ def test_border_snapshot_prepares_op_long_text_without_changing_order():
 
 
 def test_realtime_ui_snapshot_reads_all_values_once():
-  params = FakeParams({"RecordAudio": 1, "IsMetric": 1, "AlwaysOnDM": 0})
+  params = FakeParams({"RecordAudio": 1, "IsMetric": 1, "AlwaysOnDM": 0, "ShowWideCamera": 1,
+                       "DriverMonitoringEnabled": 1, "DriverMonitoringSessionDisabled": 1})
 
   assert read_realtime_ui_params(params) == RealtimeUiParamSnapshot(
     record_audio=True,
     is_metric=True,
     always_on_dm=False,
+    show_wide_camera=True,
+    dm_enabled=False,  # CANCEL x3 disabled monitoring for this drive
   )
-  assert params.calls == ["RecordAudio", "IsMetric", "AlwaysOnDM"]
+  assert params.calls == ["RecordAudio", "IsMetric", "AlwaysOnDM", "ShowWideCamera",
+                          "DriverMonitoringEnabled", "DriverMonitoringSessionDisabled"]
 
 
 def test_pending_store_rejects_stale_screen_record_until_acknowledged():
